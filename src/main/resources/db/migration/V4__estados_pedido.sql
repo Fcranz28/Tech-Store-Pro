@@ -1,0 +1,2 @@
+ALTER TABLE pedidos ADD CONSTRAINT ck_pedidos_estado
+    CHECK (estado IN ('CONFIRMADO', 'EN_PREPARACION', 'ENVIADO', 'ENTREGADO'));
