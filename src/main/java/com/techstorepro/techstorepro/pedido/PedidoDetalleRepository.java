@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PedidoDetalleRepository extends JpaRepository<PedidoDetalle, Long> {
     List<PedidoDetalle> findByPedidoIdIn(Collection<Long> pedidoIds);
+    List<PedidoDetalle> findByPedidoId(Long pedidoId);
 }

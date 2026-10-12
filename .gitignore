@@ -43,5 +43,8 @@ frontend/.pnpm-store/
 .env
 .env.*
 !.env.example
+!.env.supabase.example
 frontend/.env
 /uploads/
+/supabase/.temp/
+/supabase/.branches/

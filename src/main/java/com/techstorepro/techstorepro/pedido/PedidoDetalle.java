@@ -20,6 +20,7 @@ public class PedidoDetalle {
         this.subtotal = precioUnitario.multiply(BigDecimal.valueOf(cantidad));
     }
     public Long getProductoId() { return productoId; }
+    public Long getId() { return id; }
     public String getProductoNombre() { return productoNombre; }
     public BigDecimal getPrecioUnitario() { return precioUnitario; }
     public int getCantidad() { return cantidad; }
