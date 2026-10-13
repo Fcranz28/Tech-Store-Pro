@@ -18,6 +18,7 @@ Backend: Render con Docker. Frontend: Vercel. Base de datos: el proyecto Supabas
 | `DB_PASSWORD` | Contraseña PostgreSQL del proyecto, guardada como secreto en Render |
 | `APP_FRONTEND_ORIGIN` | Origen HTTPS exacto del frontend Vercel |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Credenciales iniciales del administrador; contraseña de al menos 12 caracteres |
+| `CLOUDINARY_URL` | Credenciales de Cloudinary, solo en el backend; las nuevas subidas devuelven su URL HTTPS |
 
 Render genera `JWT_SECRET`. El Blueprint activa el perfil `supabase`, configura el puerto 10000 y limita el heap Java al 60% de la memoria del contenedor. La API escucha en `0.0.0.0` y la comprobación de salud usa `/actuator/health/readiness`, que incluye PostgreSQL. La URL pública se toma de `RENDER_EXTERNAL_URL`; opcionalmente se puede sobrescribir con `APP_PUBLIC_URL`.
 
@@ -55,6 +56,6 @@ Invoke-RestMethod https://TU-SERVICIO.onrender.com/productos
 
 Después apunta Angular a esa URL HTTPS y verifica login, carrito, pedidos y devoluciones con los permisos correspondientes.
 
-El plan gratuito puede suspender el servicio por inactividad y no conserva archivos locales después de cambios de instancia o despliegues. Las imágenes del catálogo almacenadas en Cloudinary son persistentes. La implementación actual de nuevas subidas todavía usa archivos locales: antes de depender de esas subidas en producción, debe utilizar almacenamiento externo o un servicio con disco persistente.
+El plan gratuito puede suspender el servicio por inactividad y no conserva archivos locales después de cambios de instancia o despliegues. Las nuevas subidas del administrador se guardan en Cloudinary y su URL HTTPS se persiste en `productos.imagen_url` al guardar el producto. El endpoint mantiene el formato `{ "imagenUrl": "https://..." }`; el frontend puede reintentar la subida sin cambiar el formulario. El logo y favicon siguen siendo recursos del frontend. La lectura de archivos locales antiguos se conserva por compatibilidad, pero las nuevas subidas no escriben en el contenedor.
 
 Referencias: [Docker en Render](https://render.com/docs/docker), [Blueprints](https://render.com/docs/blueprint-spec), [Plan gratuito](https://render.com/docs/free), [Conexiones Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres).

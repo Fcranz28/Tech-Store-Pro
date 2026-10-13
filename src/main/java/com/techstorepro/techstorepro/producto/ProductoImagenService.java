@@ -3,7 +3,6 @@ package com.techstorepro.techstorepro.producto;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 import java.io.ByteArrayInputStream;
 import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,9 +17,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProductoImagenService {
     private static final long MAX_SIZE = 5 * 1024 * 1024;
     private final Path directory;
+    private final CloudinaryImageStorage cloudinary;
 
-    public ProductoImagenService(@Value("${app.upload-dir:./uploads/productos}") String directory) {
+    public ProductoImagenService(@Value("${app.upload-dir:./uploads/productos}") String directory, CloudinaryImageStorage cloudinary) {
         this.directory = Path.of(directory).toAbsolutePath().normalize();
+        this.cloudinary = cloudinary;
     }
 
     public String upload(MultipartFile file) {
@@ -33,10 +34,7 @@ public class ProductoImagenService {
             if (extension == null || !validImage(bytes, extension)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo se permiten imágenes JPEG, PNG y WebP.");
             }
-            String name = UUID.randomUUID() + "." + extension;
-            Files.createDirectories(directory);
-            Files.write(directory.resolve(name), bytes);
-            return name;
+            return cloudinary.upload(bytes, extension);
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo guardar la imagen.");
         }
