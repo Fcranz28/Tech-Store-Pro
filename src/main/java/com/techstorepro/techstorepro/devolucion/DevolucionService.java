@@ -26,11 +26,13 @@ public class DevolucionService {
     private final PedidoRepository pedidos;
     private final PedidoDetalleRepository lineas;
     private final UsuarioRepository usuarios;
+    private final DevolucionHistorialRepository historial;
 
     public DevolucionService(DevolucionRepository devoluciones, DevolucionDetalleRepository detalles,
-            PedidoRepository pedidos, PedidoDetalleRepository lineas, UsuarioRepository usuarios) {
+            PedidoRepository pedidos, PedidoDetalleRepository lineas, UsuarioRepository usuarios, DevolucionHistorialRepository historial) {
         this.devoluciones = devoluciones; this.detalles = detalles; this.pedidos = pedidos;
         this.lineas = lineas; this.usuarios = usuarios;
+        this.historial = historial;
     }
     private Long usuarioId(String email) {
         return usuarios.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED)).getId();
@@ -74,6 +76,8 @@ public class DevolucionService {
             request.motivo().trim(), request.comentario(), importe));
         detalles.saveAll(request.items().stream().map(item -> new DevolucionDetalle(saved.getId(), item.pedidoDetalleId(),
             item.cantidad(), disponibles.get(item.pedidoDetalleId()).getPrecioUnitario())).toList());
+        historial.saveAndFlush(new DevolucionHistorial(saved.getId(), null, EstadoDevolucion.SOLICITADA,
+            usuarios.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED)), request.comentario()));
         return respuesta(saved);
     }
     private void validarCantidad(PedidoDetalle linea, int cantidad) {
@@ -113,7 +117,7 @@ public class DevolucionService {
         return respuesta(devoluciones.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Devolución no encontrada")));
     }
     @Transactional
-    public Respuesta cambiar(Long id, CambioEstado request) {
+    public Respuesta cambiar(String email, Long id, CambioEstado request) {
         Devolucion d = devoluciones.lockById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Devolución no encontrada"));
         if (d.getEstado() != request.estadoActual()) throw new ResponseStatusException(HttpStatus.CONFLICT, "El estado cambió; actualiza la solicitud");
         if (!d.getEstado().puedeAvanzarA(request.estado())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Transición de estado no permitida");
@@ -127,7 +131,10 @@ public class DevolucionService {
             for (DevolucionDetalle item : detalles.findByDevolucionIdIn(List.of(id)))
                 validarCantidad(compra.get(item.getPedidoDetalleId()), item.getCantidad());
         }
+        var actor = usuarios.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        var evento = new DevolucionHistorial(id, d.getEstado(), request.estado(), actor, request.observacionOperador());
         d.avanzar(request.estado(), request.observacionOperador());
+        historial.saveAndFlush(evento);
         return respuesta(d);
     }
     private Respuesta respuesta(Devolucion d) {
@@ -139,6 +146,7 @@ public class DevolucionService {
                 item.getPrecioUnitario(), item.getSubtotal());
         }).toList();
         return new Respuesta(d.getId(), d.getPedidoId(), d.getUsuarioId(), d.getEstado(), d.getMotivo(), d.getComentario(),
-            d.getObservacionOperador(), d.getImporte(), d.getCreatedAt(), d.getUpdatedAt(), items);
+            d.getObservacionOperador(), d.getImporte(), d.getCreatedAt(), d.getUpdatedAt(), items,
+            historial.findByDevolucionIdOrderByCreatedAtAscIdAsc(d.getId()).stream().map(Evento::from).toList());
     }
 }

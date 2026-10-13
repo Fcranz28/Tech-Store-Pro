@@ -36,7 +36,7 @@ public class DevolucionController {
         return service.gestion(estado, motivo, desde, hasta, pagina, tamanio);
     }
     @GetMapping("/gestion/{id}") public Respuesta gestionDetalle(@PathVariable Long id) { return service.gestionDetalle(id); }
-    @PatchMapping("/gestion/{id}/estado") public Respuesta cambiar(@PathVariable Long id, @Valid @RequestBody CambioEstado request) {
-        return service.cambiar(id, request);
+    @PatchMapping("/gestion/{id}/estado") public Respuesta cambiar(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id, @Valid @RequestBody CambioEstado request) {
+        return service.cambiar(jwt.getSubject(), id, request);
     }
 }

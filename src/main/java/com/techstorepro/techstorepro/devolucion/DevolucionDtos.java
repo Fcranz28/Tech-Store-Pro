@@ -19,6 +19,13 @@ public final class DevolucionDtos {
     public record Linea(Long pedidoDetalleId, String nombre, int cantidad, BigDecimal precioUnitario, BigDecimal subtotal) {}
     public record Respuesta(Long id, Long pedidoId, Long usuarioId, EstadoDevolucion estado, String motivo,
         String comentario, String observacionOperador, BigDecimal importe, Instant createdAt, Instant updatedAt,
-        List<Linea> items) {}
+        List<Linea> items, List<Evento> historial) {}
+    public record Evento(Long id, EstadoDevolucion estadoAnterior, EstadoDevolucion estadoNuevo,
+        Long actorId, String actorNombre, String actorRol, String observacion, Instant createdAt) {
+        public static Evento from(DevolucionHistorial h) {
+            return new Evento(h.getId(), h.getEstadoAnterior(), h.getEstadoNuevo(), h.getActorId(),
+                h.getActorNombre(), h.getActorRol(), h.getObservacion(), h.getCreatedAt());
+        }
+    }
     public record Pagina(List<Respuesta> content, long totalElements, int totalPages, int number) {}
 }

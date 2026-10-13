@@ -3,7 +3,7 @@ WORKDIR /workspace
 COPY pom.xml ./
 RUN mvn -B -ntp dependency:go-offline
 COPY src ./src
-RUN mvn -B -ntp -DskipTests package
+RUN mvn -B -ntp verify
 
 FROM docker.io/library/eclipse-temurin:17-jre-alpine AS runtime
 WORKDIR /app

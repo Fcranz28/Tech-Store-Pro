@@ -22,14 +22,17 @@ class DevolucionServiceTests {
     private final PedidoRepository pedidos = mock(PedidoRepository.class);
     private final PedidoDetalleRepository lineas = mock(PedidoDetalleRepository.class);
     private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
+    private final DevolucionHistorialRepository historial = mock(DevolucionHistorialRepository.class);
     private DevolucionService service;
     private Pedido pedido;
     private PedidoDetalle linea;
 
     @BeforeEach void setUp() throws Exception {
-        service = new DevolucionService(devoluciones, detalles, pedidos, lineas, usuarios);
+        service = new DevolucionService(devoluciones, detalles, pedidos, lineas, usuarios, historial);
         Usuario user = mock(Usuario.class);
         when(user.getId()).thenReturn(5L);
+        when(user.getNombre()).thenReturn("Cliente Test");
+        when(user.getRol()).thenReturn(com.techstorepro.techstorepro.usuario.Rol.USER);
         when(usuarios.findByEmail("buyer@example.com")).thenReturn(Optional.of(user));
         pedido = new Pedido(5L, new BigDecimal("120.00"));
         setId(pedido, 7L); pedido.avanzarEstado(EstadoPedido.ENTREGADO);
@@ -54,6 +57,11 @@ class DevolucionServiceTests {
         assertEquals(new BigDecimal("80.00"), result.importe());
         assertEquals(EstadoDevolucion.SOLICITADA, result.estado());
         verify(detalles).saveAll(any());
+        var createdEvent = org.mockito.ArgumentCaptor.forClass(DevolucionHistorial.class);
+        verify(historial).saveAndFlush(createdEvent.capture());
+        assertNull(createdEvent.getValue().getEstadoAnterior());
+        assertEquals(EstadoDevolucion.SOLICITADA, createdEvent.getValue().getEstadoNuevo());
+        assertEquals(5L, createdEvent.getValue().getActorId());
     }
     @Test void excessiveOrAlreadyReturnedQuantityIsRejected() {
         when(detalles.cantidadConsumida(eq(11L), any())).thenReturn(1L);
@@ -74,12 +82,18 @@ class DevolucionServiceTests {
         setId(d, 21L);
         when(devoluciones.lockById(21L)).thenReturn(Optional.of(d));
         assertEquals(EstadoDevolucion.EN_REVISION,
-            service.cambiar(21L, new CambioEstado(EstadoDevolucion.SOLICITADA, EstadoDevolucion.EN_REVISION, null)).estado());
+            service.cambiar("buyer@example.com", 21L, new CambioEstado(EstadoDevolucion.SOLICITADA, EstadoDevolucion.EN_REVISION, null)).estado());
         assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class,
-            () -> service.cambiar(21L, new CambioEstado(EstadoDevolucion.EN_REVISION, EstadoDevolucion.RECHAZADA, " "))).getStatusCode());
+            () -> service.cambiar("buyer@example.com", 21L, new CambioEstado(EstadoDevolucion.EN_REVISION, EstadoDevolucion.RECHAZADA, " "))).getStatusCode());
         assertEquals(HttpStatus.CONFLICT, assertThrows(ResponseStatusException.class,
-            () -> service.cambiar(21L, new CambioEstado(EstadoDevolucion.EN_REVISION, EstadoDevolucion.COMPLETADA, null))).getStatusCode());
+            () -> service.cambiar("buyer@example.com", 21L, new CambioEstado(EstadoDevolucion.EN_REVISION, EstadoDevolucion.COMPLETADA, null))).getStatusCode());
         assertEquals(EstadoDevolucion.RECHAZADA,
-            service.cambiar(21L, new CambioEstado(EstadoDevolucion.EN_REVISION, EstadoDevolucion.RECHAZADA, "Sin defecto")).estado());
+            service.cambiar("buyer@example.com", 21L, new CambioEstado(EstadoDevolucion.EN_REVISION, EstadoDevolucion.RECHAZADA, "Sin defecto")).estado());
+        var events = org.mockito.ArgumentCaptor.forClass(DevolucionHistorial.class);
+        verify(historial, times(2)).saveAndFlush(events.capture());
+        assertEquals(EstadoDevolucion.SOLICITADA, events.getAllValues().get(0).getEstadoAnterior());
+        assertEquals(EstadoDevolucion.EN_REVISION, events.getAllValues().get(0).getEstadoNuevo());
+        assertEquals("Sin defecto", events.getAllValues().get(1).getObservacion());
+        assertEquals("Cliente Test", events.getAllValues().get(1).getActorNombre());
     }
 }
