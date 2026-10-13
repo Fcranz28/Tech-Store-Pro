@@ -19,6 +19,12 @@ public class PedidoController {
     public List<PedidoResponse> mine(@org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt) {
         return pedidos.mine(jwt.getSubject());
     }
+    @PostMapping("/checkout")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PedidoResponse checkout(@org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt,
+            @jakarta.validation.Valid @RequestBody CheckoutRequest request) {
+        return pedidos.checkout(jwt.getSubject(), request);
+    }
     @GetMapping("/admin")
     public List<PedidoResponse> all() { return pedidos.all(); }
     @PatchMapping("/admin/{id}/estado")

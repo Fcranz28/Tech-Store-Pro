@@ -31,6 +31,13 @@ public class PedidoService {
     }
     @Transactional
     public PedidoResponse confirm(String email) {
+        return createOrder(email, null);
+    }
+    @Transactional
+    public PedidoResponse checkout(String email, CheckoutRequest request) {
+        return createOrder(email, request);
+    }
+    private PedidoResponse createOrder(String email, CheckoutRequest request) {
         Long userId = usuarios.lockByEmail(email)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED)).getId();
         List<CarritoItem> cart = carrito.findByUsuarioIdOrderById(userId);
@@ -46,7 +53,9 @@ public class PedidoService {
             }
             total = total.add(p.getPrecio().multiply(BigDecimal.valueOf(item.getCantidad())));
         }
-        Pedido pedido = pedidos.saveAndFlush(new Pedido(userId, total));
+        Pedido nuevo = new Pedido(userId, total);
+        if (request != null) nuevo.checkoutSimulado(request);
+        Pedido pedido = pedidos.saveAndFlush(nuevo);
         List<PedidoDetalle> lines = cart.stream().map(item -> {
             Producto p = locked.get(item.getProductoId());
             p.decreaseStock(item.getCantidad());
@@ -82,6 +91,7 @@ public class PedidoService {
     }
     private PedidoResponse toResponse(Pedido p, List<PedidoDetalle> lines) {
         return new PedidoResponse(p.getId(), p.getUsuarioId(), p.getEstado(), p.getTotal(), p.getCreatedAt(),
-            lines.stream().map(PedidoResponse.Linea::from).toList());
+            lines.stream().map(PedidoResponse.Linea::from).toList(), p.getNombreDestinatario(),
+            p.getTelefonoEntrega(), p.getDireccionEntrega(), p.getEstadoPago());
     }
 }

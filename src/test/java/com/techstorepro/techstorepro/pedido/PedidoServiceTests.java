@@ -43,6 +43,21 @@ class PedidoServiceTests {
         assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
         verify(pedidos, never()).saveAndFlush(any());
     }
+    @Test
+    void simulatedCheckoutUsesServerPriceAndStoresDeliveryWithoutRealPayment() {
+        when(carrito.findByUsuarioIdOrderById(5L)).thenReturn(List.of(new CarritoItem(5L, 10L, 2)));
+        var product = new Producto(new ProductoRequest("Mouse", "Descripción", "MOUSE",
+            new BigDecimal("49.00"), 4, null, false, true));
+        when(productos.lockById(10L)).thenReturn(Optional.of(product));
+        when(pedidos.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var response = service.checkout("buyer@example.com", new CheckoutRequest(" Cliente ", "999888777", " Calle 123 "));
+        assertEquals(new BigDecimal("98.00"), response.total());
+        assertEquals("SIMULADO", response.estadoPago());
+        assertEquals("Cliente", response.nombreDestinatario());
+        assertEquals("Calle 123", response.direccionEntrega());
+        assertEquals(2, product.getStock());
+        verify(carrito).deleteByUsuarioId(5L);
+    }
 
     @Test
     void orderAdvancesThroughEveryStateAndCannotAdvanceAfterDelivery() {
