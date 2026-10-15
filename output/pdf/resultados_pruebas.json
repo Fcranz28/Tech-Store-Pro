@@ -1,0 +1,74 @@
+{
+  "fecha": "2026-10-15",
+  "backend": {
+    "pruebas": 35,
+    "fallos_errores": 0,
+    "suites": [
+      [
+        "AdminDashboardSecurityTests",
+        3,
+        0
+      ],
+      [
+        "AdminDashboardServiceTests",
+        2,
+        0
+      ],
+      [
+        "AuthServiceTests",
+        3,
+        0
+      ],
+      [
+        "CarritoInvitadoServiceTests",
+        2,
+        0
+      ],
+      [
+        "JwtConfigurationTests",
+        1,
+        0
+      ],
+      [
+        "DevolucionSecurityTests",
+        4,
+        0
+      ],
+      [
+        "DevolucionServiceTests",
+        4,
+        0
+      ],
+      [
+        "CheckoutSecurityTests",
+        3,
+        0
+      ],
+      [
+        "PedidoServiceTests",
+        6,
+        0
+      ],
+      [
+        "CloudinaryImageStorageTests",
+        2,
+        0
+      ],
+      [
+        "ProductoCatalogoTests",
+        2,
+        0
+      ],
+      [
+        "ProductoImagenServiceTests",
+        3,
+        0
+      ]
+    ]
+  },
+  "frontend": {
+    "pruebas_carrito": 4,
+    "fallos": 0,
+    "build_produccion": "correcto"
+  }
+}

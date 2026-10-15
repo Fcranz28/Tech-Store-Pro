@@ -1,0 +1,52 @@
+[
+  {
+    "name": "02-catalogo-vercel",
+    "url": "https://techstorepro.vercel.app/productos",
+    "capturedAt": "2026-10-15T15:01:25.214Z"
+  },
+  {
+    "name": "03-login",
+    "url": "https://techstorepro.vercel.app/login",
+    "capturedAt": "2026-10-15T15:01:33.584Z"
+  },
+  {
+    "name": "04-mis-pedidos",
+    "url": "https://techstorepro.vercel.app/pedidos",
+    "capturedAt": "2026-10-15T15:02:05.660Z"
+  },
+  {
+    "name": "05-formulario-devolucion",
+    "url": "https://techstorepro.vercel.app/devoluciones/nueva/1",
+    "capturedAt": "2026-10-15T15:02:28.655Z"
+  },
+  {
+    "name": "10-repositorio-backend",
+    "url": "https://github.com/Fcranz28/Tech-Store-Pro/tree/codex/render-backend",
+    "capturedAt": "2026-10-15T15:06:23.799Z"
+  },
+  {
+    "name": "09-backend-salud",
+    "url": "https://techstore-pro-backend.onrender.com/actuator/health/readiness",
+    "capturedAt": "2026-10-15T15:06:34.421Z"
+  },
+  {
+    "name": "08-panel-admin",
+    "url": "https://techstorepro.vercel.app/admin",
+    "capturedAt": "2026-10-15T15:07:04.034Z"
+  },
+  {
+    "name": "07-gestion-admin",
+    "url": "https://techstorepro.vercel.app/gestion-devoluciones",
+    "capturedAt": "2026-10-15T15:09:49.051Z"
+  },
+  {
+    "name": "01-inicio-vercel",
+    "url": "https://techstorepro.vercel.app/",
+    "capturedAt": "2026-10-15T15:10:18.218Z"
+  },
+  {
+    "name": "06-historial-cliente",
+    "url": "https://techstorepro.vercel.app/devoluciones",
+    "capturedAt": "2026-10-15T15:10:27.814Z"
+  }
+]

@@ -48,3 +48,8 @@ frontend/.env
 /uploads/
 /supabase/.temp/
 /supabase/.branches/
+
+### Local working files and generated previews ###
+/tmp/
+/output/*
+!/output/pdf/

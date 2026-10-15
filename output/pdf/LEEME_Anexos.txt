@@ -1,0 +1,18 @@
+TECHSTORE PRO - ANEXOS DEL INFORME
+Fecha: 15/10/2026
+
+Contenido:
+- Informe PDF con requisitos, arquitectura, modelo, reglas, API, pruebas y despliegue.
+- evidencias/: capturas originales del navegador. manifest.json registra URL y fecha UTC.
+- resultados_pruebas.json: resumen de Maven verify y npm run verify realizados el 15/10.
+- TechStore_Pro_Postman.json: colección ampliada, sin secretos ni tokens reales.
+
+Postman: importar la colección. Configurar clienteEmail/Password, operadorEmail/Password y adminEmail/Password localmente. Los login guardan tokens en variables de colección: NO exportar la colección después sin eliminarlos. Se puede usar un administrador en operadorEmail para el workflow; para comprobar separación de roles usar un OPERADOR real.
+Primero consultar compras y detalle; ajustar pedidoId/pedidoDetalleId con datos del usuario autenticado. Para compra ajena configurar pedidoAjenoId con una compra existente de otra cuenta. Crear solicitud captura devolucionId y devolucionSolicitadaId. Probar salto inválido antes de iniciar revisión. Para rechazo sin observación configurar devolucionEnRevisionId después de entrar en revisión. Aprobar/completar y rechazar son caminos alternativos: no ejecutar ambos sobre la misma solicitud. La solicitud #1 de las capturas ya está RECHAZADA y no puede reabrirse.
+
+POST/PATCH de la colección escriben en la base y cambian solicitudes y estados; preferir entorno local con datos ficticios. La colección se entrega como guion reproducible, no como evidencia de una ejecución de Postman hoy. Las capturas usan registros ficticios existentes y no crean nuevas compras/devoluciones.
+
+Aplicación: https://techstorepro.vercel.app/
+API: https://techstore-pro-backend.onrender.com
+Backend: https://github.com/Fcranz28/Tech-Store-Pro/tree/codex/render-backend
+Frontend: https://github.com/Fcranz28/Front_end_Tech_Store_Pro

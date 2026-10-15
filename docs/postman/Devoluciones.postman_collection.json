@@ -1,0 +1,26 @@
+{
+  "info": {
+    "name": "TechStore Pro - Devoluciones",
+    "description": "Flujo de cliente y operador. Configura baseUrl, clienteToken, operadorToken, pedidoId, pedidoDetalleId y devolucionId.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8080"},
+    {"key": "clienteToken", "value": ""},
+    {"key": "operadorToken", "value": ""},
+    {"key": "pedidoId", "value": "1"},
+    {"key": "pedidoDetalleId", "value": "1"},
+    {"key": "devolucionId", "value": "1"}
+  ],
+  "item": [
+    {"name": "Cliente - Compras", "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{clienteToken}}"}], "url": "{{baseUrl}}/devoluciones/compras"}},
+    {"name": "Cliente - Detalle de compra", "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{clienteToken}}"}], "url": "{{baseUrl}}/devoluciones/compras/{{pedidoId}}"}},
+    {"name": "Cliente - Solicitar devolución", "request": {"method": "POST", "header": [{"key": "Authorization", "value": "Bearer {{clienteToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"pedidoId\":{{pedidoId}},\"motivo\":\"PRODUCTO_DEFECTUOSO\",\"comentario\":\"No funciona\",\"items\":[{\"pedidoDetalleId\":{{pedidoDetalleId}},\"cantidad\":1}]}"}, "url": "{{baseUrl}}/devoluciones"}},
+    {"name": "Cliente - Mis solicitudes", "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{clienteToken}}"}], "url": "{{baseUrl}}/devoluciones"}},
+    {"name": "Operador - Filtrar solicitudes", "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{operadorToken}}"}], "url": "{{baseUrl}}/devoluciones/gestion?estado=SOLICITADA&pagina=0&tamanio=10"}},
+    {"name": "Operador - Iniciar revisión", "request": {"method": "PATCH", "header": [{"key": "Authorization", "value": "Bearer {{operadorToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"estadoActual\":\"SOLICITADA\",\"estado\":\"EN_REVISION\"}"}, "url": "{{baseUrl}}/devoluciones/gestion/{{devolucionId}}/estado"}},
+    {"name": "Operador - Aprobar", "request": {"method": "PATCH", "header": [{"key": "Authorization", "value": "Bearer {{operadorToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"estadoActual\":\"EN_REVISION\",\"estado\":\"APROBADA\",\"observacionOperador\":\"Producto validado\"}"}, "url": "{{baseUrl}}/devoluciones/gestion/{{devolucionId}}/estado"}},
+    {"name": "Operador - Completar", "request": {"method": "PATCH", "header": [{"key": "Authorization", "value": "Bearer {{operadorToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"estadoActual\":\"APROBADA\",\"estado\":\"COMPLETADA\"}"}, "url": "{{baseUrl}}/devoluciones/gestion/{{devolucionId}}/estado"}},
+    {"name": "Operador - Rechazar", "request": {"method": "PATCH", "header": [{"key": "Authorization", "value": "Bearer {{operadorToken}}"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"estadoActual\":\"EN_REVISION\",\"estado\":\"RECHAZADA\",\"observacionOperador\":\"Explicar el motivo\"}"}, "url": "{{baseUrl}}/devoluciones/gestion/{{devolucionId}}/estado"}}
+  ]
+}

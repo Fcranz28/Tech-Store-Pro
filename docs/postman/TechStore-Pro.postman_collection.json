@@ -1,0 +1,1298 @@
+{
+  "info": {
+    "name": "TechStore Pro — API local",
+    "description": "Pruebas de la API Spring Boot. Importa el entorno local y consulta docs/postman/README.md. Las solicitudes de escritura modifican la base local. Ejecuta las carpetas manualmente en el orden descrito; no ejecutes toda la colección como una sola secuencia.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.variables.set(\"guestTokenJson\", JSON.stringify(pm.environment.get(\"guestToken\") || null));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Catálogo público",
+      "item": [
+        {
+          "name": "Listar productos y seleccionar uno con stock",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/productos",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) { const d = pm.response.json(); pm.test(\"Lista de productos\", () => pm.expect(d).to.be.an(\"array\")); const p = d.find(p => p.stock > 0); if (p) pm.environment.set(\"productId\", p.id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Detalle de producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/productos/{{productId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Catálogo paginado y filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/productos/catalogo?pagina=0&tamanio=8&orden=precio-asc&precioMin=0&precioMax=500&disponible=true",
+            "description": "Filtros adicionales: categoria=TECLADOS, q=teclado, destacado=true. Órdenes: recientes, precio-asc, precio-desc, nombre. Pagina comienza en 0; tamanio: 1–48."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) { const d = pm.response.json(); pm.test(\"Catálogo paginado\", () => { pm.expect(d.productos).to.be.an(\"array\"); pm.expect(d).to.have.property(\"totalPaginas\"); pm.expect(d.categorias).to.be.an(\"array\"); }); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Autenticación de usuario",
+      "item": [
+        {
+          "name": "01 Registrar usuario de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Postman\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get(\"userEmail\")) pm.environment.set(\"userEmail\", \"postman.\" + Date.now() + \"@example.com\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200 || pm.response.code === 201) { const d = pm.response.json(); pm.environment.set(\"userToken\", d.token); pm.test(\"Token de usuario recibido\", () => pm.expect(d.token).to.be.a(\"string\").and.not.empty); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Iniciar sesión de usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200 || pm.response.code === 201) { const d = pm.response.json(); pm.environment.set(\"userToken\", d.token); pm.test(\"Token de usuario recibido\", () => pm.expect(d.token).to.be.a(\"string\").and.not.empty); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Consultar usuario actual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/auth/me",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Carrito invitado",
+      "item": [
+        {
+          "name": "01 Obtener carrito invitado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/carrito/invitado/actual",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"token\": {{guestTokenJson}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) { const d = pm.response.json(); pm.environment.set(\"guestToken\", d.token); if (d.carrito.items.length) pm.environment.set(\"guestItemId\", d.carrito.items[0].id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Añadir producto invitado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/carrito/invitado/items",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"token\": {{guestTokenJson}}, \"productoId\": {{productId}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) { const d = pm.response.json(); pm.environment.set(\"guestToken\", d.token); if (d.carrito.items.length) pm.environment.set(\"guestItemId\", d.carrito.items[0].id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Cambiar cantidad invitado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/carrito/invitado/items/{{guestItemId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"token\": {{guestTokenJson}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) { const d = pm.response.json(); pm.environment.set(\"guestToken\", d.token); if (d.carrito.items.length) pm.environment.set(\"guestItemId\", d.carrito.items[0].id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Transferir invitado al usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/carrito/invitado/transferir",
+            "description": "Ejecutar después del login. Transfiere la selección al carrito del usuario.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"token\": {{guestTokenJson}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200 || pm.response.code === 201) { const d = pm.response.json(); if (d.items.length) pm.environment.set(\"cartItemId\", d.items[0].id); pm.test(\"Carrito con items y total\", () => { pm.expect(d.items).to.be.an(\"array\"); pm.expect(d).to.have.property(\"total\"); }); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Opcional — quitar producto invitado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/carrito/invitado/items/{{guestItemId}}/eliminar",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"token\": {{guestTokenJson}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) { const d = pm.response.json(); pm.environment.set(\"guestToken\", d.token); if (d.carrito.items.length) pm.environment.set(\"guestItemId\", d.carrito.items[0].id); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Carrito de usuario y pedido",
+      "item": [
+        {
+          "name": "01 Consultar carrito",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/carrito",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200 || pm.response.code === 201) { const d = pm.response.json(); if (d.items.length) pm.environment.set(\"cartItemId\", d.items[0].id); pm.test(\"Carrito con items y total\", () => { pm.expect(d.items).to.be.an(\"array\"); pm.expect(d).to.have.property(\"total\"); }); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Añadir producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/carrito/items",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{productId}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200 || pm.response.code === 201) { const d = pm.response.json(); if (d.items.length) pm.environment.set(\"cartItemId\", d.items[0].id); pm.test(\"Carrito con items y total\", () => { pm.expect(d.items).to.be.an(\"array\"); pm.expect(d).to.have.property(\"total\"); }); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Cambiar cantidad",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/carrito/items/{{cartItemId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200 || pm.response.code === 201) { const d = pm.response.json(); if (d.items.length) pm.environment.set(\"cartItemId\", d.items[0].id); pm.test(\"Carrito con items y total\", () => { pm.expect(d.items).to.be.an(\"array\"); pm.expect(d).to.have.property(\"total\"); }); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Confirmar pedido",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Crea un pedido real en la base local, descuenta stock y vacía el carrito. No procesa pagos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 201) { const d = pm.response.json(); pm.environment.set(\"orderId\", d.id); pm.environment.set(\"orderState\", d.estado); pm.test(\"Pedido confirmado\", () => pm.expect(d.estado).to.eql(\"CONFIRMADO\")); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Consultar mis pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Opcional — eliminar item del carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/carrito/items/{{cartItemId}}",
+            "description": "Ejecutar antes de confirmar, sobre un item que exista en el carrito."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Administración",
+      "item": [
+        {
+          "name": "01 Login de administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) { const d = pm.response.json(); pm.environment.set(\"adminToken\", d.token); pm.test(\"Cuenta ADMIN\", () => pm.expect(d.user.rol).to.eql(\"ADMIN\")); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Resumen administrativo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/admin/resumen",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Listar todos los productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/productos/admin",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Crear producto de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/productos",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto Postman de prueba\",\n  \"descripcion\": \"Producto temporal para pruebas locales de la API.\",\n  \"categoria\": \"ACCESORIOS\",\n  \"precio\": 49.9,\n  \"stock\": 10,\n  \"imagenUrl\": null,\n  \"destacado\": false,\n  \"activo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 201) pm.environment.set(\"adminProductId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Editar producto de prueba",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/productos/{{adminProductId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto Postman editado\",\n  \"descripcion\": \"Producto temporal para pruebas locales de la API.\",\n  \"categoria\": \"ACCESORIOS\",\n  \"precio\": 59.9,\n  \"stock\": 10,\n  \"imagenUrl\": null,\n  \"destacado\": false,\n  \"activo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Subir imagen (seleccionar archivo)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/productos/imagenes",
+            "description": "Selecciona un JPEG, PNG o WebP de hasta 5 MB en Body > form-data > file. No establezcas Content-Type manualmente.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) { const u = pm.response.json().imagenUrl; pm.environment.set(\"imageUrl\", u); pm.environment.set(\"imageName\", u.split(\"/\").pop()); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Consultar imagen subida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/productos/imagenes/{{imageName}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Tipo imagen\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^image\\//));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Listar todos los pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/pedidos/admin",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "7 Avanzar pedido a EN_PREPARACION",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/pedidos/admin/{{orderId}}/estado",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estadoActual\": \"{{orderState}}\",\n  \"estado\": \"EN_PREPARACION\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) pm.environment.set(\"orderState\", pm.response.json().estado);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "8 Avanzar pedido a ENVIADO",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/pedidos/admin/{{orderId}}/estado",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estadoActual\": \"{{orderState}}\",\n  \"estado\": \"ENVIADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) pm.environment.set(\"orderState\", pm.response.json().estado);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "9 Avanzar pedido a ENTREGADO",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/pedidos/admin/{{orderId}}/estado",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estadoActual\": \"{{orderState}}\",\n  \"estado\": \"ENTREGADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.response.to.be.json);",
+                  "if (pm.response.code === 200) pm.environment.set(\"orderState\", pm.response.json().estado);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10 Ocultar producto de prueba",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/productos/{{adminProductId}}",
+            "description": "Oculta únicamente el producto creado por esta carpeta; no borra su registro."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 Validaciones y permisos",
+      "item": [
+        {
+          "name": "Carrito sin autenticación",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/carrito",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Administración con usuario USER",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/productos/admin",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Cantidad inválida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/carrito/items",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{productId}}, \"cantidad\": 0}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Filtro inválido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/productos/catalogo?tamanio=0",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Producto inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/productos/9223372036854775807",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

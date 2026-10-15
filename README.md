@@ -1,15 +1,29 @@
 # TechStore Pro
 
+La configuración del contenedor y la conexión PostgreSQL de Supabase están documentadas en [Despliegue del backend con Podman](docs/despliegue-backend.md).
+El backend está desplegado en Render; su servicio Docker está definido en [render.yaml](render.yaml) y los pasos están en [docs/render.md](docs/render.md).
+
+## Repositorios y despliegues
+
+- Backend: [Tech-Store-Pro, rama codex/render-backend](https://github.com/Fcranz28/Tech-Store-Pro/tree/codex/render-backend).
+- Frontend independiente: [Front_end_Tech_Store_Pro, rama main](https://github.com/Fcranz28/Front_end_Tech_Store_Pro).
+- Aplicación: [techstorepro.vercel.app](https://techstorepro.vercel.app/).
+- API: [techstore-pro-backend.onrender.com](https://techstore-pro-backend.onrender.com).
+- Disponibilidad y conexión a BD: [readiness](https://techstore-pro-backend.onrender.com/actuator/health/readiness).
+- [Informe técnico del 15/10/2026](output/pdf/TechStore_Pro_Informe_Despliegue.pdf), [anexos](output/pdf/TechStore_Pro_Informe_y_Anexos.zip) y [capturas originales](output/pdf/evidencias/).
+
+El código Angular se mantiene en su propio repositorio. La carpeta local `Tech_Store_Frontend` puede estar en cualquier directorio; sustituye las rutas de ejemplo por las de tu equipo.
+
 Mini e-commerce fullstack de accesorios tecnológicos. Implementa autenticación JWT, catálogo, carrito persistente, confirmación de pedidos con control de stock y administración de productos y pedidos. El alcance original está en [docs/ENUNCIADO.md](docs/ENUNCIADO.md).
 
 ## Requisitos
 
 - Java 17 o superior, disponible en `PATH` como `java` y `javac`.
 - Node.js compatible con Angular 21 (el proyecto se preparó con Node 24.14.1).
-- pnpm 11 o compatible.
+- pnpm 10.28.0, usado por el workflow del frontend, o compatible con su lockfile.
 - PostgreSQL 17 o superior (se comprobó con PostgreSQL 18 local).
 
-El repositorio incluye Maven Wrapper (`mvnw.cmd` en Windows; `./mvnw` en Unix), por lo que no hace falta instalar Maven por separado. Node.js y pnpm se instalan en la máquina; las dependencias Angular se instalan localmente en `frontend/`.
+El repositorio incluye Maven Wrapper (`mvnw.cmd` en Windows; `./mvnw` en Unix), por lo que no hace falta instalar Maven por separado. Node.js y pnpm se instalan en la máquina; las dependencias Angular se instalan localmente en `Tech_Store_Frontend/`.
 
 En este equipo se encontró Java 17 en `C:\Users\Franz\.jdks\corretto-17.0.20.1`, aunque no está en el `PATH`. Para usarlo en una sesión de PowerShell:
 
@@ -21,7 +35,7 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 ## Instalación
 
 ```powershell
-cd frontend
+Set-Location 'C:\Users\Franz\Documents\Tech_Store_Frontend'
 pnpm install --frozen-lockfile
 ```
 
@@ -43,7 +57,7 @@ docker compose up -d postgres
 
 Si usas tu propia instalación, crea la base `techstore_pro` y ajusta los valores del `.env`. Flyway creará las tablas y cuatro productos de demostración al arrancar. Para generar una clave JWT aleatoria de al menos 32 bytes en PowerShell:
 
-Las imágenes del catálogo y del encabezado se sirven desde Cloudinary; el logo y el favicon se conservan en `frontend/public/assets`. La migración `V5__cloudinary_product_images.sql` guarda las URLs recortadas de cada producto en `productos.imagen_url`, tanto para instalaciones nuevas como para productos existentes que aún usen la imagen local. El administrador puede indicar una URL de imagen al crear o editar otros productos.
+Las imágenes del catálogo y del encabezado se sirven desde Cloudinary; el logo y el favicon se conservan en `Tech_Store_Frontend/public/assets`. La migración `V5__cloudinary_product_images.sql` guarda las URLs recortadas de cada producto en `productos.imagen_url`, tanto para instalaciones nuevas como para productos existentes que aún usen la imagen local. El administrador puede indicar una URL de imagen al crear o editar otros productos.
 
 ```powershell
 [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
@@ -54,7 +68,7 @@ Copia el resultado en `JWT_SECRET` del `.env`. Para otra URL del frontend, ajust
 Para acceder al panel admin, establece `ADMIN_EMAIL` y `ADMIN_PASSWORD` en `.env` **antes del primer arranque**. El backend crea esa cuenta con rol `ADMIN` si no existe. En este equipo ya hay una cuenta de administrador local; consulta los valores en tu `.env`. El arranque no cambia la contraseña de una cuenta ya existente.
 
 ```powershell
-cd frontend
+Set-Location 'C:\Users\Franz\Documents\Tech_Store_Frontend'
 pnpm start
 ```
 
@@ -66,9 +80,11 @@ En otra terminal, desde la raíz:
 
 Abre `http://localhost:4200/`. La tienda permite filtrar productos y agregarlos al carrito. Registro y login están en `/registro` y `/login`; carrito en `/carrito`, historial en `/pedidos` y panel de administración en `/admin`. Las cuentas nuevas reciben el rol `USER`.
 
-Los visitantes pueden añadir productos y revisar el carrito lateral o la página `/carrito` sin iniciar sesión. El backend firma su selección en un JWT de invitado que se conserva en `sessionStorage` durante la sesión. Tras el login o registro, el backend valida ese JWT y transfiere las cantidades al carrito persistente de la cuenta; si el producto ya estaba allí, conserva la mayor cantidad. El login se solicita al confirmar el pedido. El JWT de invitado no autoriza pedidos ni acceso al carrito de usuarios.
+Los visitantes pueden añadir productos y revisar el carrito lateral o la página `/carrito` sin iniciar sesión. El backend firma su selección en un JWT de invitado que se conserva en `localStorage`, con migración de selecciones antiguas de `sessionStorage`. Tras el login o registro, el backend valida ese JWT y transfiere las cantidades al carrito persistente de la cuenta; si el producto ya estaba allí, conserva la mayor cantidad. El login se solicita al continuar al pago simulado. El JWT de invitado no autoriza pedidos ni acceso al carrito de usuarios.
 
 ## API
+
+La [colección de Postman y su entorno local](docs/postman/README.md) incluyen solicitudes, pruebas de respuesta y captura automática de tokens e IDs para probar los flujos de la API.
 
 | Método y ruta | Cuerpo o cabecera | Resultado |
 | --- | --- | --- |
@@ -87,9 +103,15 @@ Los visitantes pueden añadir productos y revisar el carrito lateral o la págin
 | `GET /pedidos` | JWT | Historial propio |
 | `GET /pedidos/admin` | JWT de `ADMIN` | Todos los pedidos |
 
-La contraseña se almacena con BCrypt. El JWT vence tras 60 minutos. El frontend guarda el token en `sessionStorage`, lo envía sólo al backend local y lo elimina al cerrar sesión. El servidor valida el rol para endpoints admin. La confirmación del pedido verifica stock bajo bloqueo de filas y guarda total y precios unitarios en una transacción; si falla, no descuenta inventario ni vacía el carrito. Ocultar un producto mantiene el historial de pedidos. **No hay pasarela de pago**, porque el enunciado solicita confirmar pedidos, no cobrar. Para producción se necesitarían HTTPS, configuración de despliegue y revisión de la estrategia de almacenamiento del token.
+La contraseña se almacena con BCrypt. El JWT de autenticación vence tras 60 minutos; el frontend lo guarda en `sessionStorage`, lo envía solo a la API configurada y lo elimina al cerrar sesión. El servidor valida los roles de acceso. La confirmación del pedido verifica stock bajo bloqueo de filas y guarda total y precios unitarios en una transacción; si falla, no descuenta inventario ni vacía el carrito. Ocultar un producto mantiene el historial de pedidos. `POST /pedidos/checkout` implementa el pago simulado del proyecto académico, sin cobros reales. Producción utiliza HTTPS y un origen CORS explícito.
 
-## Estructura prevista
+## Devoluciones
+
+El módulo reutiliza compras entregadas: USER consulta y solicita devoluciones propias; OPERADOR y ADMIN gestionan solicitudes. El flujo es `SOLICITADA → EN_REVISION → APROBADA → COMPLETADA`, con alternativa `EN_REVISION → RECHAZADA`. El rechazo exige observación. El servidor valida pertenencia, unidades disponibles e importe con el precio histórico; cada creación/transición válida registra actor, fecha y observación en el historial.
+
+Consulta [la documentación del módulo](docs/devoluciones.md), [la colección original](docs/postman/Devoluciones.postman_collection.json) y [la colección ampliada de evaluación](output/pdf/TechStore_Pro_Postman.json). La guía de los anexos explica cómo preparar IDs, usuarios y recorridos alternativos sin ejecutar modificaciones involuntarias.
+
+## Estructura
 
 ```text
 src/main/java/com/techstorepro/techstorepro/
@@ -98,15 +120,16 @@ src/main/java/com/techstorepro/techstorepro/
   producto/     catálogo, CRUD y stock
   carrito/      carrito persistente
   pedido/       confirmación y consulta de pedidos
+  devolucion/   solicitudes, workflow e historial
 src/main/resources/db/migration/  migraciones Flyway
-frontend/src/app/
+Tech_Store_Frontend/src/app/
   core/         autenticación, interceptores y API
   features/     auth, catalogo, carrito, pedidos, admin
   shared/       vista reutilizable de producto
 docs/ENUNCIADO.md
 ```
 
-El backend separa controladores, servicios y repositorios por funcionalidad. El frontend organiza cada pantalla por flujo. Los productos y la identidad visual inicial están en migraciones y `frontend/public/assets/`.
+El backend separa controladores, servicios y repositorios por funcionalidad. El frontend organiza cada pantalla por flujo. Los productos y la identidad visual inicial están en migraciones y `Tech_Store_Frontend/public/assets/`.
 
 ## Dependencias preparadas
 
@@ -116,12 +139,14 @@ El backend separa controladores, servicios y repositorios por funcionalidad. El 
 ## Verificación
 
 ```powershell
-.\mvnw.cmd test
-cd frontend
-pnpm build
+.\mvnw.cmd verify
+Set-Location 'C:\Users\Franz\Documents\Tech_Store_Frontend'
+pnpm run verify
 ```
 
 Se verificó además el flujo real con PostgreSQL local: permiso admin, creación de producto, carrito, confirmación de pedido, descuento de stock y vaciado del carrito. Los datos temporales de esa prueba se eliminaron.
+
+El 15/10/2026 pasaron 35 pruebas del backend y 4 del carrito del frontend, además del build Angular. Las pruebas web usan MockMvc y servicios simulados; no constituyen una suite contra PostgreSQL real. Los workflows están publicados, pero la ejecución de GitHub Actions revisada quedó bloqueada por facturación de la cuenta. El informe detalla este límite y la construcción local pendiente con Podman.
 
 ### Seguimiento y actualización de pedidos
 
@@ -137,4 +162,4 @@ Devuelve el pedido actualizado. Respuestas: 400 para datos inválidos, 403 para 
 
 En Administración, selecciona o arrastra una imagen JPEG, PNG o WebP de hasta 5 MB. La vista previa aparece antes de guardar; al pulsar Guardar producto, el servidor sube el archivo y asocia su URL al producto. Solo el rol ADMIN puede subir archivos.
 
-Las imágenes nuevas se guardan en `uploads/productos/` (fuera de Git), junto a la aplicación, y se sirven desde la API. Las imágenes existentes de Cloudinary siguen disponibles. Configura `UPLOAD_DIR` para usar un directorio persistente y `APP_PUBLIC_URL` con la URL pública de la API cuando despliegues la aplicación. Cambiar o quitar una imagen del producto no elimina automáticamente el archivo anterior.
+Las imágenes nuevas se suben a Cloudinary desde el backend y su URL HTTPS se guarda en el producto. Configura `CLOUDINARY_URL` como secreto del servicio; nunca lo publiques en Git ni en Angular. `UPLOAD_DIR` conserva únicamente la compatibilidad de lectura con archivos locales anteriores. El logo y el favicon permanecen en `public` del frontend. Cambiar o quitar una imagen del producto no elimina automáticamente el recurso anterior de Cloudinary.
